@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "kasa-webhook"
+version = "0.1.0"
+description = ""
+authors = ["genzj <zj0512@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-kasa = {version = "^0.6.2.1", extras = ["speedups"]}
+uvicorn = {version = "^0.27.1", extras = ["standard"]}
+fastapi = "^0.110.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
