@@ -10,6 +10,7 @@ python = "^3.12"
 python-kasa = {version = "^0.6.2.1", extras = ["speedups"]}
 uvicorn = {version = "^0.27.1", extras = ["standard"]}
 fastapi = "^0.110.0"
+pydantic-settings = "^2.2.1"
 
 
 [build-system]
