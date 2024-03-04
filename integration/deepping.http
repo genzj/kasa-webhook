@@ -1,0 +1,6 @@
+GET http://127.0.0.1:8080/deepping
+
+?? status == 200
+?? js response.parsedBody.healthy
+?? js response.parsedBody.timestamp > 1709590245
+?? js response.parsedBody.plug_count >= 0

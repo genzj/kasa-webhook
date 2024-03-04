@@ -1,7 +1,9 @@
+from asyncio import gather
 from enum import Enum
 from functools import lru_cache
 from logging import getLogger
 from typing import Annotated, Optional
+from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException
 from kasa import SmartPlug
@@ -14,7 +16,7 @@ L = getLogger(__name__)
 
 @lru_cache
 def get_api_setting() -> ApiSettings:
-    settings = ApiSettings()  # type: ignore[CallIssue]
+    settings = ApiSettings()  # type: ignore[CallArg]
     L.info("loaded API settings %r", settings)
     return settings
 
@@ -34,6 +36,7 @@ def get_plug_key_map(
     }
 
 
+PlugNameMap = Annotated[dict[str, PlugSetting], Depends(get_plug_name_map)]
 PlugKeyMap = Annotated[dict[str, PlugSetting], Depends(get_plug_key_map)]
 
 
@@ -88,3 +91,51 @@ async def plug(
             success=False,
             error=str(ex),
         )
+
+
+class PingResponse(BaseModel):
+    healthy: bool = True
+    timestamp: float
+
+
+class DeepPingResponse(PingResponse):
+    plug_count: int
+    online_plug_host: list[str]
+    offline_plug_host: list[str]
+    offline_reason: list[str]
+
+
+@app.get("/ping")
+async def ping() -> PingResponse:
+    return PingResponse(timestamp=datetime.utcnow().timestamp())
+
+
+@app.get("/deepping")
+async def deepping(plugs: PlugNameMap) -> DeepPingResponse:
+    async def ping_plug(plug: SmartPlug) -> SmartPlug:
+        await plug.update()
+        return plug
+
+    all_plugs = tuple(plugs.values())
+    online_devices: list[PlugSetting] = []
+    offline_devices: list[PlugSetting] = []
+    discovery_exceptions: list[BaseException] = []
+    for idx, plug in enumerate(
+        await gather(
+            *[ping_plug(SmartPlug(host=plug.host)) for plug in all_plugs],
+            return_exceptions=True
+        )
+    ):
+        if isinstance(plug, SmartPlug):
+            online_devices.append(all_plugs[idx])
+        else:
+            offline_devices.append(all_plugs[idx])
+            discovery_exceptions.append(plug)
+
+    return DeepPingResponse(
+        timestamp=datetime.utcnow().timestamp(),
+        plug_count=len(plugs.items()),
+        online_plug_host=[plug.host for plug in online_devices],
+        offline_plug_host=[plug.host for plug in offline_devices],
+        offline_reason=list(map(str, discovery_exceptions)),
+    )
