@@ -26,5 +26,4 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            genzj/kasa-webhook:latest
             ghcr.io/genzj/kasa-webhook:latest
