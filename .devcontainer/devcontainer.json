@@ -12,7 +12,7 @@
 		8080
 	],
 	// 👇 Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "",
+	"postCreateCommand": "cd '${containerWorkspaceFolder}' && poetry install",
 	// 👇 Configure tool-specific properties.
 	"customizations": {
 		"vscode": {

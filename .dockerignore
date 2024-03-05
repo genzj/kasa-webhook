@@ -1,0 +1,8 @@
+.devcontainer/
+.github/
+.venv/
+.vscode/
+integration/
+.env
+.env.sample
+.gitignore
