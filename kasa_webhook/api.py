@@ -1,9 +1,9 @@
 from asyncio import gather
+from datetime import datetime
 from enum import Enum
 from functools import lru_cache
 from logging import getLogger
-from typing import Annotated, Optional
-from datetime import datetime
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
 from kasa import SmartPlug
@@ -16,13 +16,13 @@ L = getLogger(__name__)
 
 @lru_cache
 def get_api_setting() -> ApiSettings:
-    settings = ApiSettings()  # type: ignore[CallArg]
+    settings = ApiSettings()  # type: ignore[CallArg,call-arg]
     L.info("loaded API settings %r", settings)
     return settings
 
 
 def get_plug_name_map(
-    settings: Annotated[ApiSettings, Depends(get_api_setting)]
+    settings: Annotated[ApiSettings, Depends(get_api_setting)],
 ) -> dict[str, PlugSetting]:
     return {plug.name: plug for plug in settings.plugs}
 
@@ -32,7 +32,9 @@ def get_plug_key_map(
     plug_map: Annotated[dict[str, PlugSetting], Depends(get_plug_name_map)],
 ) -> dict[str, PlugSetting]:
     return {
-        key: plug_map[name] for key, name in settings.keys.items() if name in plug_map
+        key: plug_map[name]
+        for key, name in settings.keys.items()
+        if name in plug_map
     }
 
 
@@ -54,7 +56,7 @@ class PlugAPIInput(BaseModel):
 
 class PlugAPIResponse(PlugAPIInput):
     success: bool
-    error: Optional[str]
+    error: str | None
 
 
 app = FastAPI()
@@ -68,7 +70,12 @@ async def plug(
     if plug_key not in plug_key_map:
         raise HTTPException(status_code=404)
     plug_config = plug_key_map[plug_key]
-    L.info("operate %s on key %s (plug_config %s)", operation, plug_key, plug_config)
+    L.info(
+        "operate %s on key %s (plug_config %s)",
+        operation,
+        plug_key,
+        plug_config,
+    )
     plug = SmartPlug(plug_config.host)
     try:
         await plug.update()
@@ -82,7 +89,9 @@ async def plug(
         L.info("post-operation %s: %s", operation, plug)
         new_state = plug.is_on
         return PlugAPIResponse(
-            operation=operation, success=(new_state == operation.is_on()), error=""
+            operation=operation,
+            success=(new_state == operation.is_on()),
+            error="",
         )
     except Exception as ex:
         L.exception("failed to execute %s on %s", operation, plug)
@@ -123,7 +132,7 @@ async def deepping(plugs: PlugNameMap) -> DeepPingResponse:
     for idx, plug in enumerate(
         await gather(
             *[ping_plug(SmartPlug(host=plug.host)) for plug in all_plugs],
-            return_exceptions=True
+            return_exceptions=True,
         )
     ):
         if isinstance(plug, SmartPlug):

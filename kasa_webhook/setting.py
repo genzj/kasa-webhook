@@ -28,13 +28,19 @@ class ApiSettings(BaseSettings):
     def check_key_name_match(self) -> "ApiSettings":
         valid_names = {plug.name for plug in self.plugs}
         invalid_key_names = [
-            (key, name) for key, name in self.keys.items() if name not in valid_names
+            (key, name)
+            for key, name in self.keys.items()
+            if name not in valid_names
         ]
         if not invalid_key_names:
             return self
-        violates = ", ".join(f"{name=}({key=})" for key, name in invalid_key_names)
+        violates = ", ".join(
+            f"{name=}({key=})" for key, name in invalid_key_names
+        )
         raise ValueError(f"unknown plugs names in key map: {violates}.")
 
     def __hash__(self) -> int:
         # make it hashable to use the lru_cache
-        return reduce(xor, map(hash, self.plugs)) & hash(tuple(self.keys.items()))
+        return reduce(xor, map(hash, self.plugs)) & hash(
+            tuple(self.keys.items())
+        )
