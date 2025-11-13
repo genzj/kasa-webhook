@@ -1,5 +1,13 @@
 version: 1
 disable_existing_loggers: False
+filters:
+  # Define a unique name for your filter
+  path_filter:
+    # 1. Specify the fully qualified path to your class
+    (): kasa_webhook.logging_filter.AccessPathFilter
+    excluded_paths:
+      - "/ping"
+      - "/deepping"
 formatters:
   default:
     # "()": uvicorn.logging.DefaultFormatter
@@ -27,6 +35,7 @@ loggers:
     handlers:
       - access
     propagate: no
+    filters: [path_filter]
 root:
   level: DEBUG
   handlers:
