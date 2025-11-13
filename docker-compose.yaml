@@ -1,0 +1,11 @@
+---
+name: kasa-webhook
+services:
+  app:
+    image: ghcr.io/genzj/kasa-webhook:latest
+    environment:
+      KASA_WEBHOOK_PLUGS: >
+        [{"name":"phone-charger","host":"192.168.89.64"}]
+      KASA_WEBHOOK_KEYS: >
+        {"<some-keys>": "phone-charger"}
+    restart: unless-stopped
