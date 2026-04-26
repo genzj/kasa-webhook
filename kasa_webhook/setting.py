@@ -17,6 +17,8 @@ class PlugSetting(BaseModel):
 class ApiSettings(BaseSettings):
     plugs: list[PlugSetting]
     keys: dict[str, str]
+    username: str = ""
+    password: str = ""
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

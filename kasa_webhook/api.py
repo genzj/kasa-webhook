@@ -1,12 +1,16 @@
 from asyncio import gather
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from functools import lru_cache
 from logging import getLogger
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
-from kasa import SmartPlug
+from kasa import (
+    Credentials,
+    Device,
+    Discover,
+)
 from pydantic import BaseModel
 
 from .setting import ApiSettings, PlugSetting
@@ -38,6 +42,7 @@ def get_plug_key_map(
     }
 
 
+Settings = Annotated[ApiSettings, Depends(get_api_setting)]
 PlugNameMap = Annotated[dict[str, PlugSetting], Depends(get_plug_name_map)]
 PlugKeyMap = Annotated[dict[str, PlugSetting], Depends(get_plug_key_map)]
 
@@ -62,9 +67,24 @@ class PlugAPIResponse(PlugAPIInput):
 app = FastAPI()
 
 
+async def connect_device(
+    host: str, username: str, password: str
+) -> Device | None:
+    return await Discover.discover_single(
+        host=host,
+        credentials=Credentials(
+            username=username,
+            password=password,
+        ),
+    )
+
+
 @app.post("/plug/{plug_key}")
 async def plug(
-    plug_key_map: PlugKeyMap, plug_key: str, req: PlugAPIInput
+    api_settings: Settings,
+    plug_key_map: PlugKeyMap,
+    plug_key: str,
+    req: PlugAPIInput,
 ) -> PlugAPIResponse:
     operation = req.operation
     if plug_key not in plug_key_map:
@@ -76,8 +96,21 @@ async def plug(
         plug_key,
         plug_config,
     )
-    plug = SmartPlug(plug_config.host)
+    plug: Device | None = None
     try:
+        plug = await connect_device(
+            host=plug_config.host,
+            username=api_settings.username,
+            password=api_settings.password,
+        )
+        if plug is None:
+            msg = f"cannot discover the plug {plug_config.host}"
+            L.error(msg)
+            return PlugAPIResponse(
+                operation=operation,
+                success=False,
+                error=str(msg),
+            )
         await plug.update()
         L.info("pre-operate %s: %s", operation, plug)
 
@@ -116,12 +149,21 @@ class DeepPingResponse(PingResponse):
 
 @app.get("/ping")
 async def ping() -> PingResponse:
-    return PingResponse(timestamp=datetime.utcnow().timestamp())
+    return PingResponse(timestamp=datetime.now(timezone.utc).timestamp())
 
 
 @app.get("/deepping")
-async def deepping(plugs: PlugNameMap) -> DeepPingResponse:
-    async def ping_plug(plug: SmartPlug) -> SmartPlug:
+async def deepping(
+    plugs: PlugNameMap, api_settings: Settings
+) -> DeepPingResponse:
+    async def ping_plug(host: str) -> Device:
+        plug = await connect_device(
+            host=host,
+            username=api_settings.username,
+            password=api_settings.password,
+        )
+        if not plug:
+            raise Exception(f"cannot find such device {host}")
         await plug.update()
         return plug
 
@@ -131,18 +173,18 @@ async def deepping(plugs: PlugNameMap) -> DeepPingResponse:
     discovery_exceptions: list[BaseException] = []
     for idx, plug in enumerate(
         await gather(
-            *[ping_plug(SmartPlug(host=plug.host)) for plug in all_plugs],
+            *[ping_plug(host=plug.host) for plug in all_plugs],
             return_exceptions=True,
         )
     ):
-        if isinstance(plug, SmartPlug):
+        if isinstance(plug, Device):
             online_devices.append(all_plugs[idx])
         else:
             offline_devices.append(all_plugs[idx])
             discovery_exceptions.append(plug)
 
     return DeepPingResponse(
-        timestamp=datetime.utcnow().timestamp(),
+        timestamp=datetime.now(timezone.utc).timestamp(),
         plug_count=len(plugs.items()),
         online_plug_host=[plug.host for plug in online_devices],
         offline_plug_host=[plug.host for plug in offline_devices],

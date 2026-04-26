@@ -1915,26 +1915,30 @@ name = "python-kasa"
 version = "0.10.2"
 description = "Python API for TP-Link Kasa and Tapo devices"
 optional = false
-python-versions = "<4.0,>=3.11"
+python-versions = ">=3.11,<4.0"
 groups = ["main"]
-files = [
-    {file = "python_kasa-0.10.2-py3-none-any.whl", hash = "sha256:b57af2ce84b8da7c1d5f296e4a18be4246b500b5633acd5a85200612f81a38ea"},
-    {file = "python_kasa-0.10.2.tar.gz", hash = "sha256:4a75b72dc354b43b0b038d5f8ca142049879c76415728a9f24473fb15af45562"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 aiohttp = ">=3"
 asyncclick = ">=8.1.7"
 cryptography = ">=1.9"
-kasa-crypt = {version = ">=0.2.0", optional = true, markers = "extra == \"speedups\""}
+kasa-crypt = {version = ">=0.2.0", optional = true}
 mashumaro = ">=3.14"
-orjson = {version = ">=3.9.1", optional = true, markers = "extra == \"speedups\""}
+orjson = {version = ">=3.9.1", optional = true}
 tzdata = {version = ">=2024.2", markers = "platform_system == \"Windows\""}
 
 [package.extras]
-docs = ["docutils (>=0.17)", "myst-parser", "sphinx (>=7.4.7)", "sphinx-rtd-theme (>=2.0,<3.0)", "sphinxcontrib-programoutput (>=0.0,<1.0)"]
+docs = ["docutils (>=0.17)", "myst-parser", "sphinx (>=7.4.7)", "sphinx_rtd_theme (>=2.0,<3.0)", "sphinxcontrib-programoutput (>=0.0,<1.0)"]
 shell = ["ptpython", "rich"]
 speedups = ["kasa-crypt (>=0.2.0)", "orjson (>=3.9.1)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/python-kasa/python-kasa.git"
+reference = "refs/pull/1580/head"
+resolved_reference = "00847a0d020a67c494703fe7b431dd40037aea16"
 
 [[package]]
 name = "python-multipart"
@@ -2832,4 +2836,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e3a3788314a84d0e7dc29c4306822fc16559220ed40bb083b9a359d1ced6366a"
+content-hash = "1a6e750a090477fb2c7a67c0c12244706e7f725fd6dc1c485eb03134b87c9298"

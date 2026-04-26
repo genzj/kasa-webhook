@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-python-kasa = {version = "^0.10.2", extras = ["speedups"]}
+python-kasa = {git = "https://github.com/python-kasa/python-kasa.git", rev = "refs/pull/1580/head", extras = ["speedups"]}
 uvicorn = {version = "^0.46.0", extras = ["standard"]}
 fastapi = {extras = ["standard"], version = "^0.136.1"}
 pydantic-settings = "^2.2.1"
